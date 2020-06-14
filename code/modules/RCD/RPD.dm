@@ -139,6 +139,12 @@
 	if (selected)
 		return selected.Topic(href, href_list)
 
+/obj/item/device/rcd/rpd/turbo
+	icon_state = "rpd_turbo"
+
+/obj/item/device/rcd/rpd/turbo/delay(var/mob/user, var/atom/target, var/amount)
+	return do_after(user, target, amount / 2)
+
 /obj/item/device/rcd/rpd/admin
 	name = "experimental Rapid-Piping-Device (RPD)"
 

@@ -49,10 +49,11 @@
     if(charging)
         if(!turned_on)
             turned_on = 1
-            // add to lazy process
+            processing_objects.Add(src)
         else
             turned_on = 0
             eject_tool()
+		update_icon()
     // TODO: pick up the thing in the machinge
 
 /obj/machinery/power/tool_charger/emp_act(var/severity)
@@ -92,7 +93,7 @@
 		return 1
 	if(istype(T, /obj/item/device/rcd/rpd))
 		if(!user.drop_item(T, src))
-			user << "<span class='warning'>You can't let go of \the [G]!</span>"
+			user << "<span class='warning'>You can't let go of \the [T]!</span>"
 			return 1
 		charging = T
 		has_beeped = FALSE
@@ -107,7 +108,7 @@
     use_power = 1
     update_icon()
 
-/obj/machinery/power/tool_charger/late_process()
+/obj/machinery/power/tool_charger/process()
 	if(!anchored)
 		update_icon()
 		return
@@ -116,8 +117,14 @@
             eject_tool()
 		return
 	if(charging && turned_on)
-        if(energy_charged > GIGAWATT) // the proverbial gigawatt
-            contents
+        if(energy_charged >= GIGAWATT) // the proverbial gigawatt
+			if(istype(charging, /obj/device/rcd/rpd))
+				forceMove(new /obj/device/rcd/rpd/super(), loc)
+			qdel(charging)
+			charging = null
+			turned_on = 0
+			energy_charged = 0
+			return
         var/energy_consumed = surplus() * transfer_percentage
         if(energy_consumed > (800000 * 0.2)) // surplus energy must be higher than 800000 W (if stock parts are used) - only achievable if hotwired to engines
 			add_load(energy_consumed)
@@ -127,10 +134,13 @@
             return
 		else
             eject_tool()
+			turned_on = 0
             visible_message("<span class='notice'>[src] ejects \the [charging] due to insufficient power.</span>")
 			return
     else if(energy_charged > 0)
         energy_charged -= 30000 // don't just delete the energy after the item was removed; lose it over time, however
     else
         energy_charged = 0
-        //remove from the slowl process
+		update_icon()
+		processing_objects.Remove(src)
+
