@@ -294,7 +294,9 @@ to destroy them and players will be able to make replacements.
 	"recharger"=/obj/item/weapon/circuitboard/recharger,
 	"fishtank filter"=/obj/item/weapon/circuitboard/fishtank,
 	"large fishtank filter"=/obj/item/weapon/circuitboard/fishwall,
-	"electric oven"=/obj/item/weapon/circuitboard/oven,)
+	"electric oven"=/obj/item/weapon/circuitboard/oven,
+	"tool charger"=/obj/item/weapon/circuitboard/tool_charger,
+	)
 	var/soldering = 0 //Busy check
 
 /obj/item/weapon/circuitboard/blank/New()
@@ -1436,4 +1438,16 @@ obj/item/weapon/circuitboard/rdserver
 	req_components = list(
 		/obj/item/weapon/stock_parts/console_screen = 1,
 		/obj/item/weapon/stock_parts/micro_laser = 3,
+	)
+
+/obj/item/weapon/circuitboard/tool_charger
+	name = "Circuit Board (Tool Charger)"
+	desc = "A circuit board used to run a machine that can charge powertools"
+	build_path = /obj/machinery/power/tool_charger
+	board_type = MACHINE
+	origin_tech = Tc_MATERIALS + "=2;" + Tc_ENGINEERING + "=2;" + Tc_POWERSTORAGE + "=3"
+	req_components = list(
+		/obj/item/weapon/stock_parts/scanning_module = 1,
+		/obj/item/weapon/stock_parts/capacitor = 2,
+		/obj/item/weapon/stock_parts/console_screen = 1,
 	)

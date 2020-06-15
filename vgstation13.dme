@@ -652,6 +652,7 @@
 #include "code\game\machinery\syndicatebeacon.dm"
 #include "code\game\machinery\taxi_buttons.dm"
 #include "code\game\machinery\teleporter.dm"
+#include "code\game\machinery\tool_charger.dm"
 #include "code\game\machinery\turrets.dm"
 #include "code\game\machinery\vending.dm"
 #include "code\game\machinery\vending_packs.dm"
