@@ -1,7 +1,7 @@
 
 /obj/machinery/power/tool_charger
-	name = "tool charger"
-	desc = "A charger for certain engineering tools. Draws power directly from the grid."
+	name = "\improper tool supercharger"
+	desc = "A charger used for upgrading rapid-construction powertools. Requires massive amounts of power and draws it directly from the grid."
 	icon = 'icons/obj/machines/tool_charger.dmi'
 	icon_state = "tool_charger"
 	anchored = 1
@@ -15,13 +15,13 @@
 	var/transfer_rate_coeff = 1 //What is the quality of the parts that transfer energy (capacitators) ?
 	var/transfer_efficiency_bonus = 0 //What is the efficiency "bonus" (additive to percentage) from the parts used (scanning module) ?
 	var/chargelevel = -1 //Controls what's shown on the charge gauge
-	var/has_beeped = FALSE
 	var/turned_on = 0
 	var/energy_charged = 0
 	var/max_charge = TEN_MEGAWATTS
 	machine_flags = SCREWTOGGLE | WRENCHMOVE | FIXED2WORK | CROWDESTROY | EJECTNOTDEL //| EMAGGABLE
 	ghost_read = 0 // Deactivate ghost touching.
 	ghost_write = 0
+	var/processing = 0  // Make sure it's only running one process() at once
 
 /obj/machinery/power/tool_charger/Destroy()
 	qdel(charging)
@@ -60,6 +60,16 @@
 	RefreshParts()
 	if(anchored)
 		connect_to_network()
+
+/obj/machinery/power/tool_charger/RefreshParts()
+	var/T = 0
+	for(var/obj/item/weapon/stock_parts/scanning_module/SM in component_parts)
+		T = (SM.rating - 1)*0.1 //There is one scanning module. Level 1 changes nothing (70 %), level 2 transfers 80 % of power, level 3 90 %
+	transfer_efficiency_bonus = T
+	T = 0
+	for(var/obj/item/weapon/stock_parts/capacitor/CA in component_parts)
+		T += CA.rating - 1 //Two capacitors, upgraded versions can result in the charger using 28% of surplus power instead of 20% at level 3
+	transfer_rate_coeff = 1 + (T * 0.1)
 
 /obj/machinery/power/tool_charger/togglePanelOpen(var/obj/item/toggleitem, var/mob/user)
 	if(charging && turned_on)
@@ -121,7 +131,7 @@
 	set name = "Toggle on"
 	set category = "Object"
 	set src in oview(1)
-	if(usr.incapacitated()) //the magic of verbs
+	if(usr.incapacitated() && usr.dexterity_check()) //the magic of verbs
 		return
 	if(!anchored || !powernet)
 		to_chat(usr, "<span class='warning'>\The [src] has to be wrenched over a wire knot to work.</span>")
@@ -161,10 +171,10 @@
 			energy_charged = 0
 			playsound(src, 'sound/machines/ding.ogg', 50, 1)
 			return
-		var/energy_consumed = surplus() * transfer_percentage
+		var/energy_consumed = surplus() * transfer_percentage * transfer_rate_coeff
 		if(energy_consumed > (800000 * 0.2)) // surplus energy must be higher than 800000 W (if stock parts are used) - only achievable if hotwired to engines
 			add_load(energy_consumed)
-			energy_charged += (energy_consumed * transfer_efficiency)
+			energy_charged += (energy_consumed * (transfer_efficiency + transfer_efficiency_bonus))
 			if(prob(20))
 				spark(src, 5)
 			update_chargelevel()
@@ -182,6 +192,7 @@
 		chargelevel = -1
 		update_overlays()
 		processing_objects.Remove(src)
+		processing = 0
 
 /obj/machinery/power/tool_charger/proc/update_chargelevel()
 	var/newlevel = round(energy_charged / max_charge * 5)
@@ -196,7 +207,9 @@
 		to_chat(user, "Current charge: [round(energy_charged / max_charge * 100)]%")
 
 /obj/machinery/power/tool_charger/proc/turn_on()
-	processing_objects.Add(src)
+	if(!processing)
+		processing_objects.Add(src)
+		processing = 1
 	turned_on = 1
 	update_icon()
 	set_light(1, 50, LIGHT_COLOR_HALOGEN)
